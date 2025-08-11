@@ -10,7 +10,7 @@
       packages = with nixpkgs.legacyPackages.x86_64-linux; [
         python3
         python3Packages.pygobject3
-        gtk3
+        Gtk3
         gobject-introspection
       ];
       shellHook = ''

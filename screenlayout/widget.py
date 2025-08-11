@@ -21,7 +21,8 @@ import gi
 gi.require_version('PangoCairo', '1.0')
 from gi.repository import Pango
 from gi.repository import PangoCairo as pangocairo
-from gi.repository import GObject as gobject, Gtk as gtk
+from gi.repository import Gtk, Gdk
+from gi.repository import GObject as gobject, Gtk as Gtk
 from .auxiliary import Position, Size, NORMAL, ROTATIONS, InadequateConfiguration
 from .xrandr import XRandR
 from .snap import Snap
@@ -29,7 +30,7 @@ from .snap import Snap
 import gettext
 gettext.install('arandr')
 
-class ARandRWidget(gtk.DrawingArea):
+class ARandRWidget(Gtk.DrawingArea):
     __gsignals__ = {
             'changed':(gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
             }
@@ -42,7 +43,9 @@ class ARandRWidget(gtk.DrawingArea):
         self.set_size_request(1024//self.factor, 1024//self.factor) # best guess for now
 
         self.connect('button-press-event', self.click)
-        self.set_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self.set_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+
+
 
         self.setup_draganddrop()
 
@@ -59,17 +62,17 @@ class ARandRWidget(gtk.DrawingArea):
 
     def abort_if_unsafe(self):
         if not len([x for x in self._xrandr.configuration.outputs.values() if x.active]):
-            d = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_WARNING, gtk.BUTTONS_YES_NO, _("Your configuration does not include an active monitor. Do you want to apply the configuration?"))
+            d = Gtk.MessageDialog(None, Gtk.DIALOG_MODAL, Gtk.MESSAGE_WARNING, Gtk.BUTTONS_YES_NO, _("Your configuration does not include an active monitor. Do you want to apply the configuration?"))
             result = d.run()
             d.destroy()
-            if result == gtk.RESPONSE_YES:
+            if result == Gtk.RESPONSE_YES:
                 return False
             else:
                 return True
         return False
 
     def error_message(self, message):
-            d = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE, message)
+            d = Gtk.MessageDialog(None, Gtk.DIALOG_MODAL, Gtk.MESSAGE_ERROR, Gtk.BUTTONS_CLOSE, message)
             d.run()
             d.destroy()
 
@@ -100,7 +103,7 @@ class ARandRWidget(gtk.DrawingArea):
         self._lastclick = (-1,-1)
 
         self._update_size_request()
-        if self.window:
+        if self.get_window():
             self._force_repaint()
         self.emit('changed')
 
@@ -166,13 +169,13 @@ class ARandRWidget(gtk.DrawingArea):
     #################### painting ####################
 
     def do_expose_event(self, event):
-        cr = pangocairo.CairoContext(self.window.cairo_create())
+        cr = self.get_window().cairo_create()
         cr.rectangle(event.area.x, event.area.y, event.area.width, event.area.height)
         cr.clip()
 
         # clear
         cr.set_source_rgb(0,0,0)
-        cr.rectangle(0,0,*self.window.get_size())
+        cr.rectangle(0,0,*self.get_window().get_size())
         cr.fill()
         cr.save()
 
@@ -235,7 +238,7 @@ class ARandRWidget(gtk.DrawingArea):
 
     def _force_repaint(self):
         # using self.allocation as rect is offset by the menu bar.
-        self.window.invalidate_rect(gtk.gdk.Rectangle(0,0,self._xrandr.state.virtual.max[0]//self.factor,self._xrandr.state.virtual.max[1]//self.factor), False)
+        self.window.invalidate_rect(Gdk.Rectangle(0,0,self._xrandr.state.virtual.max[0]//self.factor,self._xrandr.state.virtual.max[1]//self.factor), False)
         # this has the side effect of not painting out of the available region on drag and drop
 
     #################### click handling ####################
@@ -286,12 +289,12 @@ class ARandRWidget(gtk.DrawingArea):
     #################### context menu ####################
 
     def contextmenu(self):
-        m = gtk.Menu()
+        m = Gtk.Menu()
         for on in self._xrandr.outputs:
             oc = self._xrandr.configuration.outputs[on]
             os = self._xrandr.state.outputs[on]
 
-            i = gtk.MenuItem(on)
+            i = Gtk.MenuItem(on)
             i.props.submenu = self._contextmenu(on)
             m.add(i)
 
@@ -301,20 +304,20 @@ class ARandRWidget(gtk.DrawingArea):
         return m
 
     def _contextmenu(self, on):
-        m = gtk.Menu()
+        m = Gtk.Menu()
         oc = self._xrandr.configuration.outputs[on]
         os = self._xrandr.state.outputs[on]
 
-        enabled = gtk.CheckMenuItem(_("Active"))
+        enabled = Gtk.CheckMenuItem(_("Active"))
         enabled.props.active = oc.active
         enabled.connect('activate', lambda menuitem: self.set_active(on, menuitem.props.active))
 
         m.add(enabled)
 
         if oc.active:
-            res_m = gtk.Menu()
+            res_m = Gtk.Menu()
             for r in os.modes:
-                i = gtk.CheckMenuItem(str(r))
+                i = Gtk.CheckMenuItem(str(r))
                 i.props.draw_as_radio = True
                 i.props.active = (oc.mode.name == r.name)
                 def _res_set(menuitem, on, r):
@@ -325,9 +328,9 @@ class ARandRWidget(gtk.DrawingArea):
                 i.connect('activate', _res_set, on, r)
                 res_m.add(i)
 
-            or_m = gtk.Menu()
+            or_m = Gtk.Menu()
             for r in ROTATIONS:
-                i = gtk.CheckMenuItem("%s"%r)
+                i = Gtk.CheckMenuItem("%s"%r)
                 i.props.draw_as_radio = True
                 i.props.active = (oc.rotation == r)
                 def _rot_set(menuitem, on, r):
@@ -340,9 +343,9 @@ class ARandRWidget(gtk.DrawingArea):
                     i.props.sensitive = False
                 or_m.add(i)
 
-            res_i = gtk.MenuItem(_("Resolution"))
+            res_i = Gtk.MenuItem(_("Resolution"))
             res_i.props.submenu = res_m
-            or_i = gtk.MenuItem(_("Orientation"))
+            or_i = Gtk.MenuItem(_("Orientation"))
             or_i.props.submenu = or_m
 
             m.add(res_i)
@@ -354,9 +357,9 @@ class ARandRWidget(gtk.DrawingArea):
     #################### drag&drop ####################
 
     def setup_draganddrop(self):
-        self.drag_source_set(gtk.gdk.BUTTON1_MASK, [('screenlayout-output', gtk.TARGET_SAME_WIDGET, 0)], 0)
-        self.drag_dest_set(0, [('screenlayout-output', gtk.TARGET_SAME_WIDGET, 0)], 0)
-        #self.drag_source_set(gtk.gdk.BUTTON1_MASK, [], 0)
+        self.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, [Gtk.TargetEntry.new('screenlayout-output', Gtk.TargetFlags.SAME_WIDGET, 0)], 0)
+        self.drag_dest_set(0, [Gtk.TargetEntry.new('screenlayout-output', Gtk.TargetFlags.SAME_WIDGET, 0)], 0)
+        #self.drag_source_set(Gtk.gdk.BUTTON1_MASK, [], 0)
         #self.drag_dest_set(0, [], 0)
 
         self._draggingfrom = None
@@ -373,12 +376,12 @@ class ARandRWidget(gtk.DrawingArea):
             output = self._get_point_active_output(*self._lastclick)
         except IndexError:
             # FIXME: abort?
-            context.set_icon_stock(gtk.STOCK_CANCEL, 10,10)
+            context.set_icon_stock(Gtk.STOCK_CANCEL, 10,10)
             return None
 
         self._draggingoutput = output
         self._draggingfrom = self._lastclick
-        context.set_icon_stock(gtk.STOCK_FULLSCREEN, 10,10)
+        context.set_icon_stock(Gtk.STOCK_FULLSCREEN, 10,10)
 
         self._draggingsnap = Snap(
                 self._xrandr.configuration.outputs[self._draggingoutput].size,
@@ -394,7 +397,7 @@ class ARandRWidget(gtk.DrawingArea):
         if not self._draggingoutput: # from void; should be already aborted
             return False
 
-        context.drag_status(gtk.gdk.ACTION_MOVE, time)
+        context.drag_status(Gdk.DragAction.MOVE, time)
 
         rel = x-self._draggingfrom[0], y-self._draggingfrom[1]
 

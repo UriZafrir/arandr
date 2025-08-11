@@ -18,27 +18,27 @@
 
 Run by calling the main() function."""
 
-import gtk
+import Gtk
 from . import widget
 
 def main():
-    w = gtk.Window()
-    w.connect('destroy',gtk.main_quit)
+    w = Gtk.Window()
+    w.connect('destroy',Gtk.main_quit)
 
     r = widget.ARandRWidget()
     r.load_from_x()
 
-    b = gtk.Button("Reload")
+    b = Gtk.Button("Reload")
     b.connect('clicked', lambda *args: r.load_from_x())
 
-    b2 = gtk.Button("Apply")
+    b2 = Gtk.Button("Apply")
     b2.connect('clicked', lambda *args: r.save_to_x())
 
-    v = gtk.VBox()
+    v = Gtk.VBox()
     w.add(v)
     v.add(r)
     v.add(b)
     v.add(b2)
     w.set_title('Simple ARandR Widget Demo')
     w.show_all()
-    gtk.main()
+    Gtk.main()

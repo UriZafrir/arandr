@@ -16,7 +16,10 @@
 
 import os
 from gi.repository import GObject as gobject
-from gi.repository import Gtk as gtk
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gdk
+
 
 try:
     import gconf
@@ -39,19 +42,19 @@ CYCLINGPATTERN_RECOGNITION = [
         """;; esac'""",
         ]
 
-class MetacityWidget(gtk.Table): # This will be changed to Gtk.Table in the next step
+class MetacityWidget(Gtk.Table): # This will be changed to Gtk.Table in the next step
     """Widget that manages bindings of screenlayout scripts to metacity keybindings.
 
     Not related to ARandR except that ARandR scripts are bound."""
     def __init__(self):
-        gtk.Table.__init__(self, rows=13, columns=2) # This will be changed to Gtk.Table in the next step
+        Gtk.Table.__init__(self, rows=13, columns=2) # This will be changed to Gtk.Table in the next step
 
         c = gconf.client_get_default()
         c.add_dir('/apps/metacity/global_keybindings', gconf.CLIENT_PRELOAD_NONE)
         c.add_dir('/apps/metacity/keybinding_commands', gconf.CLIENT_PRELOAD_NONE)
 
-        self.attach(gtk.Label.new(_("Accelerator")), 0,1,0,1)
-        self.attach(gtk.Label.new(_("Action")), 1,2,0,1)
+        self.attach(Gtk.Label.new(_("Accelerator")), 0,1,0,1)
+        self.attach(Gtk.Label.new(_("Action")), 1,2,0,1)
 
         self.lines = []
         for i in range(1,13):
@@ -71,7 +74,7 @@ class MetacityWidget(gtk.Table): # This will be changed to Gtk.Table in the next
             a.props.sensitive = enable and k.props.bound
 
 
-class GConfButton(gtk.Button): # This will be changed to Gtk.Button in the next step
+class GConfButton(Gtk.Button): # This will be changed to Gtk.Button in the next step
     """Button connected to a gconfkey via a gconf client c.
 
     Will call self._update when the key is changed; use self.set(value) to change the key's value."""
@@ -140,27 +143,27 @@ class KeyBindingButton(GConfButton):
         if not self.editing:
             return
 
-        keymap = Gtk.gdk.Keymap.get_default()
+        keymap = Gdk.Keymap.get_default()
         translation = keymap.translate_keyboard_state(event.hardware_keycode, event.state, event.group)
         if translation == None: # FIXME: metacity can also handle raw keycodes with modifiers (but can compiz?)
             accel_name = "%#x"%event.hardware_keycode
         else:
             (keyval, egroup, level, consumed_modifiers) = translation
             upper = event.keyval
-            accel_keyval = Gtk.gdk.keyval_to_lower(upper)
+            accel_keyval = Gdk.keyval_to_lower(upper)
 
             # Put shift back if it changed the case of the key, not otherwise.
-            if upper != accel_keyval and (consumed_modifiers & Gtk.gdk.ModifierType.SHIFT_MASK):
-                consumed_modifiers &= ~(Gtk.gdk.ModifierType.SHIFT_MASK)
+            if upper != accel_keyval and (consumed_modifiers & Gdk.ModifierType.SHIFT_MASK):
+                consumed_modifiers &= ~(Gdk.ModifierType.SHIFT_MASK)
 
             # filter consumed/ignored modifiers
-            ignored_modifiers = Gtk.gdk.ModifierType.MOD2_MASK | Gtk.gdk.ModifierType.MOD5_MASK
-            accel_mods = event.state & Gtk.gdk.ModifierType.MODIFIER_MASK & ~(consumed_modifiers | ignored_modifiers)
+            ignored_modifiers = Gdk.ModifierType.MOD2_MASK | Gdk.ModifierType.MOD5_MASK
+            accel_mods = event.state & Gdk.ModifierType.MODIFIER_MASK & ~(consumed_modifiers | ignored_modifiers)
 
-            if accel_mods == 0 and accel_keyval == Gtk.keysyms.Escape:
+            if accel_mods == 0 and accel_keyval == Gdk.KEY_Escape:
                 self.abort_editing()
                 return
-            if accel_mods == 0 and accel_keyval == Gtk.keysyms.BackSpace:
+            if accel_mods == 0 and accel_keyval == Gdk.KEY_BackSpace:
                 self.set('disabled')
                 return
 
@@ -280,7 +283,7 @@ class ActionWidget(GConfButton):
 
 def show_keybinder():
     if not gconf:
-        d = gtk.MessageDialog(None, gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE)
+        d = Gtk.MessageDialog(None, Gtk.DIALOG_DESTROY_WITH_PARENT, Gtk.MESSAGE_ERROR, Gtk.BUTTONS_CLOSE)
         d.props.text = _("gconf not available.")
         d.props.secondary_text = _("In order to configure metacity, you need to have the python gconf module installed.")
         d.run()
