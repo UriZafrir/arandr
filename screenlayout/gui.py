@@ -20,7 +20,9 @@ import os
 import optparse
 import inspect
 
-import gtk
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import gtk as gtk
 
 from . import widget
 from .metacity import show_keybinder
@@ -40,7 +42,7 @@ def actioncallback(function):
     Functions taking no arguments will never be given any, functions taking one argument (callbacks for radio actions) will be given the value of the action or just the argument.
 
     A first argument called 'self' is passed through."""
-    argnames = inspect.getargspec(function)[0]
+    argnames = inspect.getfullargspec(function)[0]
     if argnames[0] == 'self':
         has_self = True
         argnames.pop(0)
@@ -108,11 +110,11 @@ class Application(object):
     """
 
     def __init__(self, file=None, randr_display=None, force_version=False):
-        self.window = window = gtk.Window()
+        self.window = window = gtk.Window.new(gtk.WindowType.TOPLEVEL)
         window.props.title = "Screen Layout Editor"
 
         # actions
-        actiongroup = gtk.ActionGroup('default')
+        actiongroup = gtk.ActionGroup.new('default')
         actiongroup.add_actions([
             ("Layout", None, _("_Layout")),
             ("New", gtk.STOCK_NEW, None, None, None, self.do_new),
@@ -145,7 +147,7 @@ class Application(object):
         window.connect('destroy', gtk.main_quit)
 
         # uimanager
-        self.uimanager = gtk.UIManager()
+        self.uimanager = gtk.UIManager.new()
         accelgroup = self.uimanager.get_accel_group()
         window.add_accel_group(accelgroup)
 
@@ -164,7 +166,7 @@ class Application(object):
         self._widget_changed(self.widget)
 
         # window layout
-        vbox = gtk.VBox()
+        vbox = gtk.VBox.new(False, 0)
         menubar = self.uimanager.get_widget('/MenuBar')
         vbox.pack_start(menubar, expand=False)
         toolbar = self.uimanager.get_widget('/ToolBar')
@@ -186,19 +188,19 @@ class Application(object):
 
     @actioncallback
     def do_open_properties(self):
-        d = gtk.Dialog(_("Script Properties"), None, gtk.DIALOG_MODAL, (gtk.STOCK_CLOSE, gtk.RESPONSE_ACCEPT))
+        d = gtk.Dialog.new_with_buttons(_("Script Properties"), None, gtk.DialogFlags.MODAL, gtk.STOCK_CLOSE, gtk.ResponseType.ACCEPT, None)
         d.set_default_size(300,400)
 
-        script_editor = gtk.TextView()
+        script_editor = gtk.TextView.new()
         script_buffer = script_editor.get_buffer()
         script_buffer.set_text("\n".join(self.filetemplate))
-        script_editor.props.editable = False
+        script_editor.set_editable(False)
 
         #wacom_options = gtk.Label("FIXME")
 
-        nb = gtk.Notebook()
+        nb = gtk.Notebook.new()
         #nb.append_page(wacom_options, gtk.Label(_("Wacom options")))
-        nb.append_page(script_editor, gtk.Label(_("Script")))
+        nb.append_page(script_editor, gtk.Label.new(_("Script")))
 
         d.vbox.pack_start(nb)
         d.show_all()
@@ -214,7 +216,7 @@ class Application(object):
         try:
             self.widget.save_to_x()
         except Exception as e:
-            d = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, _("XRandR failed:\n%s")%e)
+            d = gtk.MessageDialog.new(None, gtk.DialogFlags.MODAL, gtk.MessageType.ERROR, gtk.ButtonsType.OK, _("XRandR failed:\n%s")%e)
             d.run()
             d.destroy()
 
@@ -249,9 +251,7 @@ class Application(object):
             self.widget.save_to_file(f, self.filetemplate)
 
     def _new_file_dialog(self, title, type):
-        d = gtk.FileChooserDialog(title, None, type)
-        d.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
-        d.add_button(gtk.STOCK_OPEN, gtk.RESPONSE_ACCEPT)
+        d = gtk.FileChooserDialog.new(title, None, type, gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL, gtk.STOCK_OPEN, gtk.ResponseType.ACCEPT, None)
 
         layoutdir = os.path.expanduser('~/.screenlayout/')
         try:
@@ -260,9 +260,8 @@ class Application(object):
             pass
         d.set_current_folder(layoutdir)
 
-        f = gtk.FileFilter()
+        f = gtk.FileFilter.new()
         f.set_name('Shell script (Layout file)')
-        f.add_pattern('*.sh')
         f.add_pattern('*.sh')
         d.add_filter(f)
 
@@ -286,14 +285,14 @@ class Application(object):
     #################### application related ####################
 
     def about(self, *args):
-        d = gtk.AboutDialog()
-        d.props.program_name = PROGRAMNAME
-        d.props.version = __version__
-        d.props.translator_credits = "\n".join(TRANSLATORS)
-        d.props.copyright = COPYRIGHT
-        d.props.comments = PROGRAMDESCRIPTION
-        d.props.license = open(os.path.join(os.path.dirname(__file__), 'data', 'gpl-3.txt')).read()
-        d.props.logo_icon_name = 'video-display'
+        d = gtk.AboutDialog.new()
+        d.set_program_name(PROGRAMNAME)
+        d.set_version(__version__)
+        d.set_translator_credits("\n".join(TRANSLATORS))
+        d.set_copyright(COPYRIGHT)
+        d.set_comments(PROGRAMDESCRIPTION)
+        d.set_license(open(os.path.join(os.path.dirname(__file__), 'data', 'gpl-3.txt')).read())
+        d.set_logo_icon_name('video-display')
         d.run()
         d.destroy()
 

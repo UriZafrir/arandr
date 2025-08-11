@@ -17,9 +17,11 @@
 from __future__ import division
 import os
 import stat
-import pango
-import pangocairo
-import gobject, gtk
+import gi
+gi.require_version('PangoCairo', '1.0')
+from gi.repository import Pango
+from gi.repository import PangoCairo as pangocairo
+from gi.repository import GObject as gobject, Gtk as gtk
 from .auxiliary import Position, Size, NORMAL, ROTATIONS, InadequateConfiguration
 from .xrandr import XRandR
 from .snap import Snap
@@ -29,7 +31,6 @@ gettext.install('arandr')
 
 class ARandRWidget(gtk.DrawingArea):
     __gsignals__ = {
-            'expose-event':'override', # FIXME: still needed?
             'changed':(gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
             }
 
@@ -213,8 +214,8 @@ class ARandRWidget(gtk.DrawingArea):
             widthperchar = textwidth/len(on)
             textheight = int(widthperchar * 0.8) # i think this looks nice and won't overflow even for wide fonts
 
-            newdescr = pango.FontDescription("sans")
-            newdescr.set_size(textheight * pango.SCALE)
+            newdescr = Pango.FontDescription.new("sans")
+            newdescr.set_size(textheight * Pango.SCALE)
 
             # create text
             layout = cr.create_layout()
@@ -319,7 +320,7 @@ class ARandRWidget(gtk.DrawingArea):
                 def _res_set(menuitem, on, r):
                     try:
                         self.set_resolution(on, r)
-                    except InadequateConfiguration, e:
+                    except InadequateConfiguration as e:
                         self.error_message(_("Setting this resolution is not possible here: %s")%e.message)
                 i.connect('activate', _res_set, on, r)
                 res_m.add(i)
@@ -332,7 +333,7 @@ class ARandRWidget(gtk.DrawingArea):
                 def _rot_set(menuitem, on, r):
                     try:
                         self.set_rotation(on, r)
-                    except InadequateConfiguration, e:
+                    except InadequateConfiguration as e:
                         self.error_message(_("This orientation is not possible here: %s")%e.message)
                 i.connect('activate', _rot_set, on, r)
                 if r not in os.rotations:

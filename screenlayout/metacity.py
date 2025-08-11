@@ -15,8 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import gobject
-import gtk
+from gi.repository import GObject as gobject
+from gi.repository import Gtk as gtk
 
 try:
     import gconf
@@ -39,19 +39,19 @@ CYCLINGPATTERN_RECOGNITION = [
         """;; esac'""",
         ]
 
-class MetacityWidget(gtk.Table):
+class MetacityWidget(gtk.Table): # This will be changed to Gtk.Table in the next step
     """Widget that manages bindings of screenlayout scripts to metacity keybindings.
 
     Not related to ARandR except that ARandR scripts are bound."""
     def __init__(self):
-        gtk.Table.__init__(self, rows=13, columns=2)
+        gtk.Table.__init__(self, rows=13, columns=2) # This will be changed to Gtk.Table in the next step
 
         c = gconf.client_get_default()
         c.add_dir('/apps/metacity/global_keybindings', gconf.CLIENT_PRELOAD_NONE)
         c.add_dir('/apps/metacity/keybinding_commands', gconf.CLIENT_PRELOAD_NONE)
 
-        self.attach(gtk.Label(_("Accelerator")), 0,1,0,1)
-        self.attach(gtk.Label(_("Action")), 1,2,0,1)
+        self.attach(gtk.Label.new(_("Accelerator")), 0,1,0,1)
+        self.attach(gtk.Label.new(_("Action")), 1,2,0,1)
 
         self.lines = []
         for i in range(1,13):
@@ -71,7 +71,7 @@ class MetacityWidget(gtk.Table):
             a.props.sensitive = enable and k.props.bound
 
 
-class GConfButton(gtk.Button):
+class GConfButton(gtk.Button): # This will be changed to Gtk.Button in the next step
     """Button connected to a gconfkey via a gconf client c.
 
     Will call self._update when the key is changed; use self.set(value) to change the key's value."""
@@ -140,34 +140,34 @@ class KeyBindingButton(GConfButton):
         if not self.editing:
             return
 
-        keymap = gtk.gdk.keymap_get_default()
+        keymap = Gtk.gdk.Keymap.get_default()
         translation = keymap.translate_keyboard_state(event.hardware_keycode, event.state, event.group)
         if translation == None: # FIXME: metacity can also handle raw keycodes with modifiers (but can compiz?)
             accel_name = "%#x"%event.hardware_keycode
         else:
             (keyval, egroup, level, consumed_modifiers) = translation
             upper = event.keyval
-            accel_keyval = gtk.gdk.keyval_to_lower(upper)
+            accel_keyval = Gtk.gdk.keyval_to_lower(upper)
 
             # Put shift back if it changed the case of the key, not otherwise.
-            if upper != accel_keyval and (consumed_modifiers & gtk.gdk.SHIFT_MASK):
-                consumed_modifiers &= ~(gtk.gdk.SHIFT_MASK)
+            if upper != accel_keyval and (consumed_modifiers & Gtk.gdk.ModifierType.SHIFT_MASK):
+                consumed_modifiers &= ~(Gtk.gdk.ModifierType.SHIFT_MASK)
 
             # filter consumed/ignored modifiers
-            ignored_modifiers = gtk.gdk.MOD2_MASK | gtk.gdk.MOD5_MASK
-            accel_mods = event.state & gtk.gdk.MODIFIER_MASK & ~(consumed_modifiers | ignored_modifiers)
+            ignored_modifiers = Gtk.gdk.ModifierType.MOD2_MASK | Gtk.gdk.ModifierType.MOD5_MASK
+            accel_mods = event.state & Gtk.gdk.ModifierType.MODIFIER_MASK & ~(consumed_modifiers | ignored_modifiers)
 
-            if accel_mods == 0 and accel_keyval == gtk.keysyms.Escape:
+            if accel_mods == 0 and accel_keyval == Gtk.keysyms.Escape:
                 self.abort_editing()
                 return
-            if accel_mods == 0 and accel_keyval == gtk.keysyms.BackSpace:
+            if accel_mods == 0 and accel_keyval == Gtk.keysyms.BackSpace:
                 self.set('disabled')
                 return
 
-            if not gtk.accelerator_valid(accel_keyval, accel_mods):
+            if not Gtk.accelerator_valid(accel_keyval, accel_mods):
                 return # just modifiers
 
-            accel_name = gtk.accelerator_name(accel_keyval, accel_mods)
+            accel_name = Gtk.accelerator_name(accel_keyval, accel_mods)
             #self.set_accelerator(accel_keyval, event.hardware_keycode, accel_mods)
             #self.__old_value = None
             #self.emit('accel-edited', accel_name, accel_keyval, accel_mods, event.hardware_keycode)
@@ -237,30 +237,30 @@ class ActionWidget(GConfButton):
             self.items = None
 
     def on_clicked(self, widget):
-        m = gtk.Menu()
+        m = Gtk.Menu.new()
         try:
             for f in os.listdir(SCRIPTSDIR):
                 if not f.endswith('.sh'):
                     continue
                 text = f[:-3]
-                i = gtk.CheckMenuItem(text)
+                i = Gtk.CheckMenuItem.new_with_label(text)
                 if text in self.items:
-                    i.props.active = True
+                    i.set_active(True)
                 i.connect('activate', lambda menuitem, script: self.toggle(script), text)
-                m.add(i)
+                m.append(i)
         except OSError: # no such directory
             pass
 
         if not m.get_children():
-            i = gtk.MenuItem(_("No files in %(folder)r. Save a layout first.")%{'folder':SCRIPTSDIR})
-            i.props.sensitive = False
-            m.add(i)
+            i = Gtk.MenuItem.new_with_label(_("No files in %(folder)r. Save a layout first.")%{'folder':SCRIPTSDIR})
+            i.set_sensitive(False)
+            m.append(i)
         else:
-            m.add(gtk.MenuItem())
+            m.append(Gtk.SeparatorMenuItem.new())
 
-            i = gtk.ImageMenuItem(gtk.STOCK_CLEAR)
+            i = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_CLEAR)
             i.connect('activate', lambda menuitem: self.set(""))
-            m.add(i)
+            m.append(i)
 
         m.show_all()
         m.popup(None, None, None, 1, 0)
@@ -287,24 +287,23 @@ def show_keybinder():
         d.destroy()
         return
 
-    d = gtk.Window()
-    d.props.modal = True
-    d.props.title = _("Keybindings (via Metacity)")
+    d = Gtk.Window.new(Gtk.WindowType.TOPLEVEL)
+    d.set_modal(True)
+    d.set_title(_("Keybindings (via Metacity)"))
 
-    close = gtk.Button(gtk.STOCK_CLOSE)
-    close.props.use_stock = True
+    close = Gtk.Button.new_from_stock(Gtk.STOCK_CLOSE)
     close.connect('clicked', lambda *args: d.destroy())
-    buttons = gtk.HBox() # FIXME: use HButtonBox
-    buttons.props.border_width = 5
-    buttons.pack_end(close, expand=False)
+    buttons = Gtk.HBox.new(False, 0) # FIXME: use HButtonBox
+    buttons.set_border_width(5)
+    buttons.pack_end(close, False, False, 0)
 
     t = MetacityWidget()
 
-    contents = gtk.VBox()
-    contents.pack_start(t)
-    l = gtk.Label(_('Click on a button in the left column and press a key combination you want to bind to a certain screen layout. (Use backspace to clear accelerators, escape to abort editing.) Then, select one or more layouts in the right column.\n\nThis will only work if you use metacity or another program reading its configuration.'))
-    l.props.wrap = True
-    contents.pack_start(l)
-    contents.pack_end(buttons, expand=False)
+    contents = Gtk.VBox.new(False, 0)
+    contents.pack_start(t, False, False, 0)
+    l = Gtk.Label.new(_('Click on a button in the left column and press a key combination you want to bind to a certain screen layout. (Use backspace to clear accelerators, escape to abort editing.) Then, select one or more layouts in the right column.\n\nThis will only work if you use metacity or another program reading its configuration.'))
+    l.set_wrap(True)
+    contents.pack_start(l, False, False, 0)
+    contents.pack_end(buttons, False, False, 0)
     d.add(contents)
     d.show_all()
