@@ -213,7 +213,7 @@ class Application(object):
 
         try:
             self.widget.save_to_x()
-        except Exception, e:
+        except Exception as e:
             d = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, _("XRandR failed:\n%s")%e)
             d.run()
             d.destroy()
@@ -263,6 +263,7 @@ class Application(object):
         f = gtk.FileFilter()
         f.set_name('Shell script (Layout file)')
         f.add_pattern('*.sh')
+        f.add_pattern('*.sh')
         d.add_filter(f)
 
         return d
@@ -298,12 +299,12 @@ class Application(object):
 
     def run(self, options):
         gtk.main()
-	if options.saveflag:
-		try:
-                	f = os.environ['HOME']+'/.xprofile'
-                	self.widget.save_to_file(f, self.filetemplate)
-		except KeyError:
-			pass
+        if options.saveflag:
+            try:
+                f = os.environ['HOME']+'/.xprofile'
+                self.widget.save_to_file(f, self.filetemplate)
+            except KeyError:
+                pass
 
 def main():
     p = optparse.OptionParser(usage="%prog [savedfile]", description="Another XRandrR GUI", version="%%prog %s"%__version__)
