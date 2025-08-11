@@ -11,7 +11,14 @@
         python3
         python3Packages.pygobject3
         gtk3
+        python3Packages.pycairo
+        python3Packages.pygobject3
+        pango
       ];
+      shellHook = ''
+        # Customize prompt to show devShell context
+        export PS1="(ARandR-dev) $PS1"
+      '';
     };
   };
 }
